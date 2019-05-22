@@ -2,6 +2,7 @@ use structopt;
 use structopt::StructOpt;
 use std::path::PathBuf;
 use mbox_reader::MboxFile;
+use native_tls::TlsConnector;
 
 #[derive(Debug, StructOpt)]
 struct Options {
@@ -13,6 +14,12 @@ struct Options {
     pub take: Option<usize>,
     #[structopt(long = "skip", default_value = "0")]
     pub skip: usize,
+    #[structopt(long = "username", default_value = "")]
+    pub username: String,
+    #[structopt(long = "password", default_value = "")]
+    pub password: String,
+    #[structopt(long = "domain", default_value = "imap.example.com")]
+    pub domain: String,
 }
 
 fn main() {
@@ -31,4 +38,34 @@ fn main() {
             .unwrap_or(String::from("<binary>"));
         println!("Message: {}", message);
     }
+
+    let username = options.username;
+    let password = options.password;
+    let domain = options.domain.as_str();
+
+    let tls = TlsConnector::builder().build().expect("Failed to build TlsConnector");
+    let client = imap::connect((domain, 993), domain, &tls)
+        .map_err(|error| eprintln!("Failed to connect with error: {}", error))
+        .unwrap();
+
+    let mut session = client.login(username, password)
+        .map_err(|(error, _)| eprintln!("Failed to login with error: {}", error))
+        .unwrap();
+
+    let mailbox = "INBOX";
+    session.select(mailbox)
+        .map_err(|error| eprintln!("Failed selecting mailbox {} with error: {}", mailbox, error))
+        .unwrap();
+
+    let messages = session.fetch("1", "ALL")
+        .map_err(|error| eprintln!("Failed to fetch emails with error: {}", error))
+        .unwrap();
+
+    for message in messages.iter() {
+        println!("{:?}", message);
+    }
+
+    session.logout()
+        .map_err(|error| eprintln!("Failed logging out with error: {}", error))
+        .unwrap();
 }
