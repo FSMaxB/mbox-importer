@@ -5,3 +5,5 @@ authors = ["Max Bruckner <max@maxbruckner.de>"]
 edition = "2018"
 
 [dependencies]
+mbox-reader = "0.1.0"
+structopt = "0.2.15"
