@@ -7,3 +7,5 @@ edition = "2018"
 [dependencies]
 mbox-reader = "0.1.0"
 structopt = "0.2.15"
+imap = "1.0.1"
+native-tls = "0.2.3"
